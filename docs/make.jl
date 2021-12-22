@@ -1,5 +1,8 @@
 using SegmentedDisplays
 using Documenter
+using Literate
+
+Literate.markdown("src/dashboard.jl", "src")
 
 DocMeta.setdocmeta!(SegmentedDisplays, :DocTestSetup, :(using SegmentedDisplays); recursive=true)
 
@@ -15,6 +18,7 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
+        "Dashboard" => "dashboard.md",
     ],
 )
 

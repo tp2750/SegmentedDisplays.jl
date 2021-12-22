@@ -1,5 +1,9 @@
 module SegmentedDisplays
 
-# Write your package code here.
+using Images, FileIO, Plots
+import RollingFunctions ## for rollmedian
+
+include("plot.jl")
+export segment_dashboard
 
 end
