@@ -2,7 +2,7 @@ using SegmentedDisplays
 using Documenter
 using Literate
 
-Literate.markdown("src/dashboard.jl", "src")
+Literate.markdown("docs/src/dashboard.jl", "docs/src")
 
 DocMeta.setdocmeta!(SegmentedDisplays, :DocTestSetup, :(using SegmentedDisplays); recursive=true)
 
