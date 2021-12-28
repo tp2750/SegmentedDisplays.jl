@@ -18,6 +18,19 @@ Everything is measured in pixels.
 
 When we annotate 7-segment digits, we trace the middle of the segments, as seen in the examples below.
 
+## Annotation
+
+Finding the `Tetragon`s of the active areas is done using the `imshow` function in ImageView.
+It shows the coordinate of the mouse in the lower left corner.
+Format is [i,j] as we use here as well.
+
+```
+using ImageView
+using Images, FileIO
+img = load("../../images/display_reference.png");
+imshow(img)
+```
+
 ## Structs
 
 The `Tetragon` constructor is given a 4-vector of 2-vectors (corners).
