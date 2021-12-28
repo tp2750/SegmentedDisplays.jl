@@ -2,6 +2,7 @@ using SegmentedDisplays
 using Documenter
 using Literate
 
+Literate.markdown("docs/src/display_segmentation.jl", "docs/src")
 Literate.markdown("docs/src/dashboard.jl", "docs/src")
 Literate.markdown("docs/src/segmentation.jl", "docs/src")
 
@@ -20,7 +21,8 @@ makedocs(;
     pages=[
         "Home" => "index.md",
         "Dashboard" => "dashboard.md",
-        "Segmentation" => "segmentation.md",
+        "Display Segmentation" => "display_segmentation.md",
+        "API v1 Segmentation" => "segmentation.md",
     ],
 )
 
