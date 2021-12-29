@@ -11,6 +11,11 @@ include("segment.jl")
 export Tetragon, tetragon_trace, display_area_tetragons
 export area_digits_tetragons, display_digits_tetragons
 
+export Segment, digit_segments, hmid, LineSegments, segment_tetragon, image_region_pixels
+
+using DataFrames, Clustering
+export digit_analysis
+
 using Statistics
 include("utils.jl")
 
