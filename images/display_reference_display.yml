@@ -14,7 +14,7 @@ display:
         - [163, 49]
         - [163, 677]
       type: 7segment
-      value: number
+      # value: number
       digits: 9
       decimalpoints: 3
       segmentwidth: 11 # 56 - 45, 64-52
