@@ -246,7 +246,7 @@ function digit_analysis(image, corners, segmentwidth=8)
     pixel_res = kmeans(pixel_vector, 2)
     pixel_centers = vec(pixel_res.centers)
     fg_cluster, bg_cluster = argmin(pixel_centers), argmax(pixel_centers) ## fg is black:0, bg is white: 1
-    @info fg_cluster, bg_cluster
+    @debug fg_cluster, bg_cluster
     pixel_std =  map( x-> std(pixel_vector[assignments(pixel_res) .== x]), (1,2))
     img_assignments = predict(Gray.(image), pixel_centers) ## assign cluster to full image based on local segmentation
     segments = digit_segments(corners)
@@ -265,16 +265,104 @@ function predict(image, centers)
     reshape(map(x -> argmin(abs.(x .- centers)), vec(image)), size(image))
 end
 
+"""
+    SegmentedDisplay(path::String)
+    Get Segment description from YAML file
+"""
+struct SegmentedDisplay
+    display::DefaultDict{Any,Any,Missing}
+    function SegmentedDisplay(display)
+        @assert "display" ∈ keys(display)
+        @assert all(["active_areas", "name", "viewing_area"] .∈ Ref(keys(display["display"])))
+        new(display)
+    end
+end
+SegmentedDisplay(path::String) = SegmentedDisplay(DefaultDict(missing,YAML.load_file(path)))
+
+"""
+    display_DataFrame(disp::SegmentedDisplay)
+    Convert segment description to DataFrame
+"""
+function display_DataFrame(disp::SegmentedDisplay) ## DefaultDict trix to simulate rbind.fill
+    res = DataFrame[]
+    for display in values(disp.display)
+        for area1 in values(display["active_areas"])
+            area = DefaultDict(missing, area1)
+            push!(res,
+                  hcat(
+                      DataFrame(display_name = display["name"], viewing_area = Tetragon(display["viewing_area"])),
+                      DataFrame(area_name = area["name"],
+                                type = area["type"],
+                                tetragon=Tetragon(area["tetragon"]),
+                                digits = area["digits"],
+                                digit_width = area["digitwidth"],
+                                segment_width = area["segmentwidth"],
+                                ),
+                      
+                  )
+                  )
+        end
+    end
+    vcat(res...)
+end
+
+"""
+    display_digit_tetragons
+    Compute `Tetragon`s for all digits in all aresas in display
+    Input can be ::SegmentedDisplay or DataFrame representation from `display_DataFrame`.
+    Output: one row per digit.
+"""
+function display_digit_tetragons(dis::DataFrame)    
+    combine(groupby(dis, [:display_name, :type, :area_name, :digits, :digit_width, :segment_width])) do df
+        DataFrame(digit_number = 1:df.digits[1], digit_tetragon = area_digits_tetragons(df.tetragon[1], df.digits[1], df.digit_width[1]))
+    end
+end
+
+display_digit_tetragons(dis::SegmentedDisplay) = display_digit_tetragons(display_DataFrame(dis))
 
 
+"""
+    Convert vector of segment states to encoded digit
+"""
+function decode_segments(states)
+    segment_digits = DefaultDict(missing, Dict{Vector{String}, Union{Int64,Missing}}(
+        ["on", "on", "on", "on", "on", "on", "off"] => 0,
+        ["off", "on", "on", "off", "off", "off", "off"] => 1,
+        ["on", "on", "off", "on", "on", "off", "on"] => 2,
+        ["on", "on", "on", "on", "off", "off", "on"] => 3,
+        ["off", "on", "on", "off", "off", "on", "on"] => 4,
+        ["on", "off", "on", "on", "off", "on", "on"] => 5,
+        ["on", "off", "on", "on", "on", "on", "on"] => 6,
+        ["on", "on", "on", "off", "off", "off", "off"] => 7,
+        ["on", "on", "on", "on", "on", "on", "on"] => 8,
+        ["on", "on", "on", "on", "off", "on", "on"] => 9,
+    ))
+    segment_digits[states]
+end
 
-
-
-
-
-
-
-
+"""
+    display_digit_values(image, dis)
+    input: image and segmentation info (::SegmentedDisplay or DataFrame representation from `display_DataFrame`).
+    output: DataFrame with one row per digit and decoded value in column `digit_value`
+    TODO: decode decimal point
+    TODO: decode icons. For this we need to communicat ethe cluster means from the digits (no digits are all off, but icons can be all off)
+"""
+function display_digit_values(image, dis)
+    dis_digits = display_digit_tetragons(dis)
+    res = DataFrame[]
+    for row in eachrow(dis_digits)
+        row.type == "7segment" || continue
+        @debug row
+        dig_df = digit_analysis(image, row.digit_tetragon)
+        @debug dig_df
+        digit_value = decode_segments(dig_df.state)
+        state_string = replace(join(dig_df.state,""), "on" => "1", "off" => "0")
+        @debug digit_value
+        push!(res, hcat(DataFrame(row), allowmissing!(DataFrame(digit_value = digit_value, state = state_string))))
+        ##  push!(res, hcat(DataFrame(row), DataFrame(digit_value = decode_segments(digit_analysis(image, row.digit_tetragon).state))); promote = true)
+    end
+    vcat(res...)
+end
 
 
 

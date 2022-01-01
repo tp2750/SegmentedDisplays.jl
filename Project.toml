@@ -4,7 +4,9 @@ authors = ["Thomas Poulsen"]
 version = "0.1.0"
 
 [deps]
+Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 ImageDraw = "4381153b-2b60-58ae-a1ba-fd683676385f"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"

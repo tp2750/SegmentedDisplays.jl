@@ -74,3 +74,16 @@ Below we analyze digit 4:
 using DataFrames
 digit_analysis(img, digit4)
 
+#=
+# Object oriented interface
+
+To all all digits, we ned to use the object oriented interface: `SegmentedDisplay(path)`
+
+=#
+
+dis = SegmentedDisplay("../../images/display_reference_display.yml");
+
+display_DataFrame(dis)
+
+display_digit_values(img,dis)
+
