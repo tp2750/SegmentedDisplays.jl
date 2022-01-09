@@ -21,14 +21,14 @@ In practice, we can take images like this:
 
 Some useful terms when talking about LCD-displays:  https://www.pacificdisplay.com/lcd_glossary.htm
 
+- Viewing Area: 	The area of a display which is visible through a bezel or cut-out in an instrument. This area is made up of the "Active Area" and the boarder around the active area.
+- Image Area: 	The total area bounded by the display characters
 - Active Area: 	Area (L x H) of the LCD that has active segments.
+- Segment: 	An active area within the display which can be turned on and off. This can be a single segment of a 7-segment character, an annunciator, or a pixel in a dot matrix array.
 - Annunciator: 	A word or special symbol which is driven as a single segment
 - Contrast Ratio: 	The ratio of the luminance between the dark and light areas of the display.
 - Ghosting: 	A condition where segments which are in the "off" condition become slightly visible.
-- Image Area: 	The total area bounded by the display characters
 - Ink Overlay: 	The process of applying opaque, colored inks to the display to provide colors, or highlight certain areas of annunciators.
-- Segment: 	An active area within the display which can be turned on and off. This can be a single segment of a 7-segment character, an annunciator, or a pixel in a dot matrix array.
-- Viewing Area: 	The area of a display which is visible through a bezel or cut-out in an instrument. This area is made up of the "Active Area" and the boarder around the active area.
 
 ## Status
 
