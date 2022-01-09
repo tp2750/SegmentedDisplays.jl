@@ -416,8 +416,8 @@ function image_display_values(image, display)
     digits = combine_digits(digit_values) ## one row per area
     decimals =  combine_decimals(decimal_values) ##  one row per area
     res = leftjoin(digits, decimals, on = :area_name)
-    res = @transform(res, :val = something.(tryparse.(Float64,:value),missing)) ## convert nothing to missing
-    res = @transform(res, :result = :val ./ 10 .^:power)
+    res = @transform(res, :int_val = something.(tryparse.(Int,:value),missing)) ## convert nothing to missing
+    res = @transform(res, :result = :int_val ./ 10 .^:power)
     res
 end
 
@@ -425,6 +425,7 @@ function image_display_decimal_DataFrame(image,display)
     decimal_values = DataFrame[]
     for aa in display.display["display"]["active_areas"]
         @debug "area_name: " * aa["name"]
+        aa["type"] == "7segment" || continue
         aa_segments = area_decimal_segments(aa["tetragon"], aa["digits"], aa["digitwidth"], aa["segmentwidth"])
         res = segment_decimal_analysis(image, aa_segments)
         insertcols!(res, 1, :area_name => aa["name"])
