@@ -67,7 +67,7 @@ median(image_region_pixels(Gray.(img), segment_tetragon(digit4_segments[2], 10))
 #=
 Now we are ready to identify the digits as described.
 
-This is done in the function `digit_analysis(image, t::Tetragon,  segmentwidth=8)`.
+This is done in the function `digit_analysis(image, t::Tetragon,  segmentwidth)`.
 Below we analyze digit 4:
 =#
 
@@ -87,3 +87,25 @@ display_DataFrame(dis)
 
 display_digit_values(img,dis)
 
+#=
+# Dicimal points
+
+We also need to parse the decimal points.
+
+For each digit, we check if there is a decimal point in front.
+If we find more than one decimal point we report it as none found.
+
+=#
+using DataFramesMeta
+
+image_display_decimal_DataFrame(img,dis)
+
+#=
+
+# The final result
+
+Now we just need to combne the pieces to report the readings on the display:
+
+=#
+
+image_display_values(img, dis)

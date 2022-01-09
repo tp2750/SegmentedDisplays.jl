@@ -43,3 +43,4 @@ display:
        - [264, 300]
        - [264, 765] ## 775
      digitwidth: 30 # 65 -> 30
+     segmentwidth: 7 # 50-43
