@@ -45,6 +45,36 @@ function display_area_tetragons(display)
     res
 end
 
+function area_decimal_segments(corners, digits, digit_width, segment_width)
+    ## predict location of decimal points (as segements, ie 2-vectors or corners) similar to digits below
+    area_width = corners[1][2] - corners[2][2]
+    total_digit_width = digits * digit_width
+    inter_digit_width = (area_width - total_digit_width)/(digits -1)
+    @debug "area width = $area_width, digit_width=$digit_width, spacing=$inter_digit_width"
+    decimal_js = corners[3][2] - round(Int, inter_digit_width/2) .+ [round(Int,(digit_width + inter_digit_width)*x) for x in 1:digits-1]
+    slope = (corners[4][1] - corners[3][1])/area_width
+    decimal_bottoms = round.(Int,(corners[3][1] .+ slope .* decimal_js)) ## obs: slope
+    [[[i,j], [i-segment_width,j]] for (i,j) in zip(decimal_bottoms, decimal_js)]
+end
+
+function segment_decimal_analysis(image, ends;  threshold=0.1)
+    ## Detect decimal points at segment:
+    ## Compare min over segment to max over segment shiftet 2x heght up
+    ## call "on" if diff is >= threshold
+    ## loop over segments
+    image_gray = Float64.(Gray.(image))
+    res = map(ends) do e
+        segment_size = abs(e[2][1] - e[1][1])
+        seg_min = minimum(vec(image_segment_pixels(image_gray, e)))
+        ref_max = maximum(vec(image_segment_pixels(image_gray, e - [[2*segment_size,0], [2*segment_size,0]])))
+        [ref_max - seg_min , abs(ref_max - seg_min) >= threshold ? "on" : "off"]
+    end
+    res = permutedims(hcat(res...))
+    DataFrame(power = length(ends):-1:1, contrast = Float64.(res[:,1]), state = res[:,2])
+end
+
+
+
 """
     area_digits_tetragons(area, digits, digit_width = 46)
     area::Tetragon, or vector of corners (4-vector of 2-vectors)
@@ -56,15 +86,15 @@ function area_digits_tetragons(corners, digits, digit_width = 46)
     digit_heights = (corners[4][1] - corners[1][1], corners[3][1] - corners[2][1])
     digit_height = round(Statistics.mean(digit_heights))
     digit_height_cv_pct = cv_pct(digit_heights)
-    @info "  digit height = $digit_height ± $digit_height_cv_pct %"
+    @debug "  digit height = $digit_height ± $digit_height_cv_pct %"
     # digit_width = round(digit_height / height_width_ratio)
-    @info "  digit width = $digit_width"
+    @debug "  digit width = $digit_width"
     area_widths = (corners[1][2] - corners[2][2], corners[4][2] - corners[3][2])
     area_width = round(Statistics.mean(area_widths))
     area_width_cv_pct = cv_pct(area_widths)
-    @info "  area width = $area_width  ± $area_width_cv_pct %"
+    @debug "  area width = $area_width  ± $area_width_cv_pct %"
     digit_separation = round((area_width - digits*digit_width)/(digits-1))
-    @info "  digit separation = $digit_separation"
+    @debug "  digit separation = $digit_separation"
     ## TODO: slopes (top and bottom slopes can differ)
     res = Tetragon[]
     for digit = 1:digits ## order digits left to right. reverse later for number types.
@@ -97,7 +127,7 @@ area_digits_tetragons(area::Tetragon, digits, digit_width = 46) = area_digits_te
 function display_digits_tetragons(display)
     res1 = Tetragon[]
     for aa in display["display"]["active_areas"]
-        @info "Name: " * aa["name"]
+        @debug "Name: " * aa["name"]
         push!(res1, area_digits_tetragons(Tetragon(aa["tetragon"]), aa["digits"], aa["digitwidth"])...)
     end
     res1
@@ -241,21 +271,26 @@ image_segment_pixels(image, s::Segment) = image_segment_pixels(image, s.ends)
 digit_analysis(image, t::Tetragon,  segmentwidth=8) = digit_analysis(image, t.corners, segmentwidth)
 function digit_analysis(image, corners, segmentwidth=8)
     ## Find foreground and background
-    digit_pixels = Gray.(image_tetragon_pixels(image, corners))
+    image_gray = Gray.(image)
+    digit_pixels = image_tetragon_pixels(image_gray, corners)
     pixel_vector = float64.(vec(digit_pixels))
     pixel_res = kmeans(pixel_vector, 2)
     pixel_centers = vec(pixel_res.centers)
     fg_cluster, bg_cluster = argmin(pixel_centers), argmax(pixel_centers) ## fg is black:0, bg is white: 1
     @debug fg_cluster, bg_cluster
     pixel_std =  map( x-> std(pixel_vector[assignments(pixel_res) .== x]), (1,2))
-    img_assignments = predict(Gray.(image), pixel_centers) ## assign cluster to full image based on local segmentation
+    img_assignments = predict(image_gray, pixel_centers) ## assign cluster to full image based on local segmentation
     segments = digit_segments(corners)
     segment_counts = map(segments) do s
         segment_assignmets = image_region_pixels(img_assignments, s) ## todo? expand segment line to tetragon?
         res = DataFrame(segment = s.name, fg_count = sum(segment_assignmets .== fg_cluster), bg_count = sum(segment_assignmets .== bg_cluster), segment_size = size(segment_assignmets))
-        transform(res, [:fg_count, :bg_count] => ByRow((x,y) -> x>y ? "on" : "off") => "state")
+        transform!(res, [:fg_count, :bg_count] => ByRow((x,y) -> x>y ? "on" : "off") => "state")
+        ## TODO: copute mean pixel-value of fg and bg pixels in this segment
+        res
     end
-    vcat(segment_counts...)
+    res = vcat(segment_counts...)
+    insertcols!(res, :cluster_centers => Ref(sort(pixel_centers)))
+    res
 end
 
 """
@@ -365,27 +400,58 @@ function display_digit_values(image, dis)
 end
 
 
+function area_decimalpoints(image, dis)
+    ## decimal points are between digits
+    ## 0 is black = fg, 1 is white = bg
+    ## take max - min in lowest segment width
+    ## take max - min in a segmentwidth 
+end
 
 
+function image_display_values(image, display)
+    ## return DataFrame: one row per area wit hreadout value
+    ## disdf = display_DataFrame(display)
+    digit_values = display_digit_values(image,display) ## one row per digit
+    decimal_values = image_display_decimal_DataFrame(image,display) ## one row per potential dicmalpoint
+    digits = combine_digits(digit_values) ## one row per area
+    decimals =  combine_decimals(decimal_values) ##  one row per area
+    res = leftjoin(digits, decimals, on = :area_name)
+    res = @transform(res, :val = something.(tryparse.(Float64,:value),missing)) ## convert nothing to missing
+    res = @transform(res, :result = :val ./ 10 .^:power)
+    res
+end
 
+function image_display_decimal_DataFrame(image,display)
+    decimal_values = DataFrame[]
+    for aa in display.display["display"]["active_areas"]
+        @debug "area_name: " * aa["name"]
+        aa_segments = area_decimal_segments(aa["tetragon"], aa["digits"], aa["digitwidth"], aa["segmentwidth"])
+        res = segment_decimal_analysis(image, aa_segments)
+        insertcols!(res, 1, :area_name => aa["name"])
+        push!(decimal_values,res)
+    end
+    vcat(decimal_values...)
+end
 
-
-
-
-## Functions below are for the API v1 from 2021-12-26
-function segmentation_image_draw!(segmentation, image)
-    for val in segmentation["display"]["values"]
-        for ele in val["elements"]
-            for seg in ele["segments"]
-                isnothing(seg) && continue
-                draw!(image,  tetragon_trace(seg))
-            end
+function combine_decimals(decimal_df)
+    combine(groupby(decimal_df, :area_name)) do df
+        res = @subset(df, :state .== "on")
+        if nrow(res) == 0
+            res = first(df,1)
+            res.power = [0]
+            res.state = ["none"]
         end
+        if nrow(res) > 1
+            res = first(res,1)
+            res.power = [0]
+            res.state = ["multiple"]
+        end
+        res
     end
 end
 
-function segmentation_image_draw(segmentation, image)
-    img1 = copy(image)
-    segmentation_image_draw!(segmentation, img1)
-    img1
+
+function combine_digits(digit_df)
+    # df = transform(df) # TODO convert missing to "_"
+    @combine(groupby(digit_df, :area_name ), :value = join(:digit_value))
 end
