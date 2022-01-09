@@ -1,0 +1,34 @@
+display:
+  name: flowIQ2200
+  viewing_area:
+    - [426, 1459]
+    - [449, 157]
+    - [904, 160]
+    - [890, 1469]
+  active_areas:
+    -
+      name: consumption
+      tetragon:
+        - [520, 1256]
+        - [529, 225]
+        - [680, 222] ## 689 222 not working ## 680, 228 works
+        - [672, 1257]
+      type: 7segment
+      value: number
+      digits: 9
+      decimalpoints: 3
+      segmentwidth: 14
+      digitwidth: 72
+      digitseparation: 48
+    -
+      name: flow
+      tetragon:
+        - [ 732, 470] 
+        - [ 733, 220] 
+        - [ 820, 219] 
+        - [ 820, 467] 
+      type: 7segment
+      value: number
+      digits: 4
+      digitwidth: 41 # 262 - 221
+      segmentwidth: 7 # 738-731
