@@ -9,6 +9,8 @@
 
 The objective of this project is to be able to read the display of a [FlowIQ2200](https://www.kamstrup.com/en-en/water-solutions/meters-devices/meters/flowiq-2200-eu) water-meter using a [ESP32-cam](https://www.arducam.com/esp32-machine-vision-learning-guide/) module.
 
+## Input
+
 Ideally the viewing area of the display looks like this:
 
 ![reference-image](images/display_reference.png)
@@ -16,6 +18,18 @@ Ideally the viewing area of the display looks like this:
 In practice, we can take images like this:
 
 ![cam-hi_2021-12-20_2130_1200x1600.jpg](images/cam-hi_2021-12-20_2130_1200x1600.jpg)
+
+## Status
+
+Right now, I can load am image together with a description of where the active areas are, and parse the value of the main active area (the consumption):
+
+```{julia}
+using Revise, SegmentedDisplays, Images, FileIO, YAML, PrettyPrinting, Statistics, ImageDraw
+dis = SegmentedDisplay("images/cam-hi_2021-12-20_2130_1200x1600_display.yml");
+img = load("images/cam-hi_2021-12-20_2130_1200x1600.jpg");
+imshow(img)
+image_display_values(img, dis)
+```
 
 ## Nomenclaure
 
@@ -30,14 +44,3 @@ Some useful terms when talking about LCD-displays:  https://www.pacificdisplay.c
 - Ghosting: 	A condition where segments which are in the "off" condition become slightly visible.
 - Ink Overlay: 	The process of applying opaque, colored inks to the display to provide colors, or highlight certain areas of annunciators.
 
-## Status
-
-Right now, I can load am image together with a description of where the active areas are, and parse the value of the main active area (the consumption):
-
-```{julia}
-using Revise, SegmentedDisplays, Images, FileIO, YAML, PrettyPrinting, Statistics, ImageDraw
-dis = SegmentedDisplay("images/cam-hi_2021-12-20_2130_1200x1600_display.yml");
-img = load("images/cam-hi_2021-12-20_2130_1200x1600.jpg");
-imshow(img)
-image_display_values(img, dis)
-```
