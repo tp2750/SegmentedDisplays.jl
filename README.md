@@ -11,11 +11,11 @@ The objective of this project is to be able to read the display of a [FlowIQ2200
 
 Ideally the viewing area of the display looks like this:
 
-![reference-image](image/display_reference.png)
+![reference-image](images/display_reference.png)
 
 In practice, we can take images like this:
 
-![cam-hi_2021-12-20_2130_1200x1600.jpg](image/cam-hi_2021-12-20_2130_1200x1600.jpg)
+![cam-hi_2021-12-20_2130_1200x1600.jpg](images/cam-hi_2021-12-20_2130_1200x1600.jpg)
 
 ## Nomenclaure
 
