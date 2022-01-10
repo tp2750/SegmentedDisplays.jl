@@ -96,20 +96,24 @@ function area_digits_tetragons(corners, digits, digit_width = 46)
     digit_separation = round((area_width - digits*digit_width)/(digits-1))
     @debug "  digit separation = $digit_separation"
     ## TODO: slopes (top and bottom slopes can differ)
+    top_slope = (corners[1][1] - corners[2][1])/(corners[1][2] - corners[2][2])
+    bottom_slope = (corners[4][1] - corners[3][1])/(corners[4][2] - corners[3][2])
     res = Tetragon[]
     for digit = 1:digits ## order digits left to right. reverse later for number types.
+        dj =  digit * digit_width  +  (digit - 1) * digit_separation
+        dj1 =  (digit-1) * digit_width  +  (digit - 1) * digit_separation
         push!(res, Tetragon(
         [
-            [corners[2][1], ## Todo: top slope
+            [corners[2][1] + round(Int,top_slope* dj), ##  top slope
              corners[2][2]  +  digit * digit_width  +  (digit - 1) * digit_separation
              ], 
-            [corners[2][1], ## Todo: top slope
+            [corners[2][1] + round(Int,top_slope* dj1), ##  top slope
              corners[2][2]  +  (digit-1) * digit_width  +  (digit - 1) * digit_separation
              ], 
-            [corners[3][1], ## Todo: top slope
+            [corners[3][1] + round(Int,bottom_slope* dj1), ##  bottom slope
              corners[3][2]  +  (digit-1) * digit_width  +  (digit - 1) * digit_separation
              ], 
-            [corners[3][1], ## Todo: bottom slope
+            [corners[3][1] + round(Int,bottom_slope* dj), ## bottom slope
              corners[3][2]  +  digit * digit_width  +  (digit - 1) * digit_separation
              ], 
         ]
