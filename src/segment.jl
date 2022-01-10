@@ -289,7 +289,7 @@ function digit_analysis(image, corners, segmentwidth=8)
         segment_assignmets = image_region_pixels(img_assignments, s) ## todo? expand segment line to tetragon?
         res = DataFrame(segment = s.name, fg_count = sum(segment_assignmets .== fg_cluster), bg_count = sum(segment_assignmets .== bg_cluster), segment_size = size(segment_assignmets))
         transform!(res, [:fg_count, :bg_count] => ByRow((x,y) -> x>y ? "on" : "off") => "state")
-        ## TODO: copute mean pixel-value of fg and bg pixels in this segment
+        ## TODO: compute mean pixel-value of fg and bg pixels in this segment
         res
     end
     res = vcat(segment_counts...)
