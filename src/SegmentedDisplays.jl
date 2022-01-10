@@ -8,7 +8,7 @@ include("v1.jl") ## deprecated functions
 include("plot.jl")
 export segment_dashboard
 
-using ImageDraw, PrettyPrinting, YAML
+using ImageDraw, PrettyPrint, YAML
 using DataFrames, Clustering, DataStructures, DataFramesMeta
 include("segment.jl")
 export Tetragon, tetragon_trace, display_area_tetragons
@@ -27,5 +27,11 @@ export normalize_image, normalize_image!
 
 ## deprecated functions for API v1 (2021-12-26)
 export segmentation_image_draw!, segmentation_image_draw
+
+## 2022-01-10 New structure
+include("structs.jl")
+export Display, display_digits!
+
+include("methods.jl")
 
 end
