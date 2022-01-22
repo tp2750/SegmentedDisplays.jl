@@ -30,7 +30,9 @@ export segmentation_image_draw!, segmentation_image_draw
 
 ## 2022-01-10 New structure
 include("structs.jl")
-export Display, display_digits!
+export Display, display_call_digits!, display_values
+export display_digits, display_segments
+export draw_areas, draw_digits, draw_segments
 
 include("methods.jl")
 

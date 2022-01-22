@@ -413,7 +413,7 @@ end
 
 
 function image_display_values(image, display)
-    ## return DataFrame: one row per area wit hreadout value
+    ## return DataFrame: one row per area with readout value
     ## disdf = display_DataFrame(display)
     digit_values = display_digit_values(image,display) ## one row per digit
     decimal_values = image_display_decimal_DataFrame(image,display) ## one row per potential dicmalpoint
@@ -437,6 +437,8 @@ function image_display_decimal_DataFrame(image,display)
     end
     vcat(decimal_values...)
 end
+
+
 
 function combine_decimals(decimal_df)
     combine(groupby(decimal_df, :area_name)) do df
