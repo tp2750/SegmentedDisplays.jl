@@ -257,6 +257,8 @@ end
 image_tetragon_pixels(image, t::Tetragon) = image_tetragon_pixels(image, t.corners)
 
 """
+    image_segment_pixels(image, corners)
+    image_segment_pixels(image, s::Segment)
     Get the pixels of a segment
 """
 function image_segment_pixels(image, corners) ## outer rectangle
@@ -461,4 +463,27 @@ end
 function combine_digits(digit_df)
     # df = transform(df) # TODO convert missing to "_"
     @combine(groupby(digit_df, :area_name ), :value = join(:digit_value))
+end
+
+function segment_innerpoint(segment::Segment, width, factor=2.0)
+    ends = segment.ends
+    i_mean = mean([ends[1][1], ends[2][1]])
+    j_mean = mean([ends[1][2], ends[2][2]])
+    if segment.name == "A"
+        return([i_mean + factor * width, j_mean])
+    elseif segment.name == "B"
+        return([i_mean, j_mean - factor * width])
+    elseif segment.name == "C"
+        return([i_mean, j_mean - factor * width])
+    elseif segment.name == "D"
+        return([i_mean - factor * width, j_mean])
+    elseif segment.name == "E"
+        return([i_mean, j_mean + factor * width])
+    elseif segment.name == "F"
+        return([i_mean, j_mean + factor * width])
+    elseif segment.name == "G" ## above
+        return([i_mean - factor * width, j_mean])
+    else
+        error("segment_innerpoint does not know segment name: $(segment.name)")
+    end
 end
