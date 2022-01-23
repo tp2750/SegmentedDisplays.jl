@@ -25,10 +25,18 @@ Right now, I can load am image together with a description of where the active a
 
 ```{julia}
 using Revise, SegmentedDisplays, Images, FileIO, YAML, PrettyPrinting, Statistics, ImageDraw
-dis = SegmentedDisplay("images/cam-hi_2021-12-20_2130_1200x1600_display.yml");
+dis = Display("images/cam-hi_2021-12-20_2130_1200x1600_display.yml");
 img = load("images/cam-hi_2021-12-20_2130_1200x1600.jpg");
 imshow(img)
-image_display_values(img, dis)
+display_call_digits!(dis, img; method="2points");
+display_values(dis)
+
+2×7 DataFrame
+ Row │ area_name    value      decimal_power  contrast  state  int_val  result  
+     │ String       String     Int64?         Float64?  Any    Int64    Float64 
+─────┼──────────────────────────────────────────────────────────────────────────
+   1 │ consumption  000078461              3  0.172549  on       78461   78.461
+   2 │ flow         0000                   0  0.0       none         0    0.0
 ```
 
 ## Nomenclaure
