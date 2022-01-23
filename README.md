@@ -21,7 +21,7 @@ In practice, we can take images like this:
 
 ## Status
 
-Right now, I can load am image together with a description of where the active areas are, and parse the value of the main active area (the consumption):
+Right now, I can load am image together with a description of where the active areas are, and parse the value of the 7-segment areas:
 
 ```{julia}
 using Revise, SegmentedDisplays, Images, FileIO, YAML, PrettyPrinting, Statistics, ImageDraw
