@@ -53,6 +53,8 @@ function Display(path::String)
         aa["type"] == "7segment" || continue
         push!(digit_areas, DigitArea(aa["name"],Tetragon(aa["tetragon"]), aa["digits"], aa["digitwidth"], aa["segmentwidth"], Digit[], DataFrame()))
     end
-    Display(display["display"]["name"], Tetragon(display["display"]["viewing_area"]), digit_areas)
+    dis = Display(display["display"]["name"], Tetragon(display["display"]["viewing_area"]), digit_areas)
+    digit_tetragons!(dis) ## Make sure tetragons are defined
+    dis
 end
 

@@ -32,7 +32,7 @@ export segmentation_image_draw!, segmentation_image_draw
 include("structs.jl")
 export Display, display_call_digits!, display_values
 export display_digits, display_segments
-export draw_areas, draw_digits, draw_segments
+export draw_areas, draw_digits, draw_segments, draw_2points
 
 include("methods.jl")
 

@@ -57,7 +57,7 @@ function area_decimal_segments(corners, digits, digit_width, segment_width)
     [[[i,j], [i-segment_width,j]] for (i,j) in zip(decimal_bottoms, decimal_js)]
 end
 
-function segment_decimal_analysis(image, ends;  threshold=0.1)
+function segment_decimal_analysis(image, ends;  threshold=0.05)
     ## Detect decimal points at segment:
     ## Compare min over segment to max over segment shiftet 2x heght up
     ## call "on" if diff is >= threshold
@@ -70,7 +70,7 @@ function segment_decimal_analysis(image, ends;  threshold=0.1)
         [ref_max - seg_min , abs(ref_max - seg_min) >= threshold ? "on" : "off"]
     end
     res = permutedims(hcat(res...))
-    DataFrame(power = length(ends):-1:1, contrast = Float64.(res[:,1]), state = res[:,2])
+    DataFrame(decimal_power = length(ends):-1:1, contrast = Float64.(res[:,1]), state = res[:,2])
 end
 
 
@@ -423,7 +423,7 @@ function image_display_values(image, display)
     decimals =  combine_decimals(decimal_values) ##  one row per area
     res = leftjoin(digits, decimals, on = :area_name)
     res = @transform(res, :int_val = something.(tryparse.(Int,:value),missing)) ## convert nothing to missing
-    res = @transform(res, :result = :int_val ./ 10 .^:power)
+    res = @transform(res, :result = :int_val ./ 10 .^:decimal_power)
     res
 end
 
@@ -447,12 +447,12 @@ function combine_decimals(decimal_df)
         res = @subset(df, :state .== "on")
         if nrow(res) == 0
             res = first(df,1)
-            res.power = [0]
+            res.decimal_power = [0]
             res.state = ["none"]
         end
         if nrow(res) > 1
             res = first(res,1)
-            res.power = [0]
+            res.decimal_power = [0]
             res.state = ["multiple"]
         end
         res
@@ -465,25 +465,47 @@ function combine_digits(digit_df)
     @combine(groupby(digit_df, :area_name ), :value = join(:digit_value))
 end
 
+function segment_midpoint(ends)
+    i_mean = round(Int,mean([ends[1][1], ends[2][1]]))
+    j_mean = round(Int,mean([ends[1][2], ends[2][2]]))
+    [i_mean, j_mean]
+end
+segment_midpoint(segment::Segment) = segment_midpoint(segment.ends)
+
 function segment_innerpoint(segment::Segment, width, factor=2.0)
-    ends = segment.ends
-    i_mean = mean([ends[1][1], ends[2][1]])
-    j_mean = mean([ends[1][2], ends[2][2]])
+    i_mean = segment_midpoint(segment)[1]
+    j_mean = segment_midpoint(segment)[2]
+    local res
     if segment.name == "A"
-        return([i_mean + factor * width, j_mean])
+        res = [i_mean + factor * width, j_mean]
     elseif segment.name == "B"
-        return([i_mean, j_mean - factor * width])
+        res = [i_mean, j_mean - factor * width]
     elseif segment.name == "C"
-        return([i_mean, j_mean - factor * width])
+        res = [i_mean, j_mean - factor * width]
     elseif segment.name == "D"
-        return([i_mean - factor * width, j_mean])
+        res = [i_mean - factor * width, j_mean]
     elseif segment.name == "E"
-        return([i_mean, j_mean + factor * width])
+        res = [i_mean, j_mean + factor * width]
     elseif segment.name == "F"
-        return([i_mean, j_mean + factor * width])
+        res = [i_mean, j_mean + factor * width]
     elseif segment.name == "G" ## above
-        return([i_mean - factor * width, j_mean])
+        res = [i_mean - factor * width, j_mean]
     else
-        error("segment_innerpoint does not know segment name: $(segment.name)")
+        error("segment_innerpoint does not know segment name: $(segment.name)")        
     end
+    round.(Int, res)
+end
+
+
+function segment_call_2points(segment::Segment, width, image, threshold; factor = 2.0)
+    ## call a segment
+    bg_point = segment_innerpoint(segment, width, factor)
+    seg_point = segment_midpoint(segment)
+    bg_value = Float64(Gray(image[bg_point[1], bg_point[2]]))
+    seg_value = Float64(Gray(image[seg_point[1], seg_point[2]]))
+    seg_diff = bg_value - seg_value
+    seg_state = seg_diff >= threshold ? "on" : "off"
+    call_conf = abs(seg_diff - threshold)/(threshold) ## seg_diff >= threshold ? (seg_diff - threshold)/(1-threshold) : (threshold - seg_diff)/threshold
+    @debug "bg: $bg_point -> $bg_value. segment:  $seg_point -> $seg_value. Diff = $seg_diff"
+    DataFrame(segment = segment.name, fg_value = seg_value, bg_value = bg_value, diff = seg_diff, threshold = threshold, state = seg_state, confidence = call_conf, segment_point = Ref(seg_point), bg_point = Ref(bg_point))
 end

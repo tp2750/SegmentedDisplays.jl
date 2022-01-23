@@ -7,14 +7,20 @@ function display_values(display)
     res = DataFrame[]
     for area in display.digit_areas
         digit_values = display_digits(area) ## one row per digit
-        decimal_values = area.decimal_df ## one row per potential dicmalpoint
+        if nrow(digit_values) == 0
+            @info "display_values found no digits in area $(area.name). Call display_call_digits!()"
+            continue
+        end
+        decimal_values = area.decimal_df ## one row per potential decimalpoint
         digits = combine_digits(digit_values) ## one row per area
         decimals =  combine_decimals(decimal_values) ##  one row per area
         push!(res, leftjoin(digits, decimals, on = :area_name))
     end
     res = reduce(vcat, res)
-    res = @transform(res, :int_val = something.(tryparse.(Int,:value),missing)) ## convert nothing to missing
-    res = @transform(res, :result = :int_val ./ 10 .^:power)
+    if nrow(res) > 0
+        res = @transform(res, :int_val = something.(tryparse.(Int,:value),missing)) ## convert nothing to missing
+        res = @transform(res, :result = :int_val ./ 10 .^:decimal_power)
+    end
     res
 end
 
@@ -68,12 +74,15 @@ end
     kwds:
         method:
             "2means": k-means finds fg and bg
-            "2point": difference between single points
+            "2points": difference between single points
 """
-function display_call_digits!(display, image; method="2means")
-    digit_tetragons!(display) ## Make sure tetragons are defined
+function display_call_digits!(display, image; method="2means", threshold = 0.05, force=false)
     if method == "2means"
-        digit_values_2means!(display, image)
+        digit_values_2means!(display, image, force=force)
+    elseif method == "2points"
+        display_call_2points!(display, image, threshold, force=force)
+    else
+        error("display_call_digits! does not know method: $method")
     end
     ## Call decmals    
     for area in display.digit_areas
@@ -82,6 +91,7 @@ function display_call_digits!(display, image; method="2means")
         res.area_name .= area.name
         area.decimal_df = res
     end
+    display_values(display)
 end
 
 """
@@ -109,6 +119,10 @@ function display_digits(area::DigitArea)
     digitnumber = 0
     for digit in area.digits
         digitnumber += 1
+        if ismissing(digit.digit_call)
+            @info "display_digits: digit number $digitnumber in area $(area.name) not called. Call display_call_digits!()"
+            continue
+        end
         part = DataFrame(digit_number = digitnumber,
                          digit_value = digit.digit_call.digit_value,
                          digit_call_method = digit.digit_call.digit_call_method,
@@ -193,7 +207,7 @@ function draw_digits(image, display; color = RGB{N0f8}(0,1,0))
     draw(image, tetragon_trace(tetragons), color)
 end
 
-function draw_segments(image, display; color = RGB{N0f8}(0,0,1))
+function draw_segments!(image, display; color = RGB{N0f8}(0,0,1))
     segments = Segment[]
     for area in display.digit_areas
         for digit in area.digits
@@ -202,5 +216,66 @@ function draw_segments(image, display; color = RGB{N0f8}(0,0,1))
             end
         end
     end
-    draw(image, LineSegments(segments), color)
+    draw!(image, LineSegments(segments), color)
 end
+function draw_segments(image, display; color = RGB{N0f8}(0,0,1))
+    img = copy(image)
+    draw_segments!(img, display; color = color)
+    img
+end
+
+function draw_2points(image, display; factor = 2.0, color = RGB{N0f8}(1,0,0))
+    img = copy(image)
+    draw_segments!(img, display)
+    for area in display.digit_areas
+        for digit in area.digits
+            for segment in digit.segments
+                bg_point = segment_innerpoint(segment, area.segment_width, factor)
+                seg_point = segment_midpoint(segment)
+                draw!(img, ImageDraw.LineSegment(CartesianIndex(bg_point...), CartesianIndex(seg_point...)), color)
+            end
+        end
+    end
+    img
+end
+
+function call_digit_2points(digit::Digit, segment_width, image, threshold; factor = 2.0)
+    res = DataFrame[]
+    for segment in digit.segments
+        push!(res, segment_call_2points(segment, segment_width, image, threshold, factor=factor))
+    end
+    reduce(vcat, res)
+end
+
+function call_digit_2points!(digit::Digit, segment_width, image, threshold; factor = 2.0, force=false)
+    if !ismissing(digit.digit_call) & !force
+        @info "call_digit_2points! found digit: $(digit.digit_call.digit_value). Not foce'ed so Skipping."
+        return nothing
+    end
+    dig_df = call_digit_2points(digit, segment_width, image, threshold, factor = factor)
+    digit.digit_call = DigitCall(
+        "2point",
+        replace(join(dig_df.state,""), "on" => "1", "off" => "0"),
+        decode_segments(dig_df.state),
+        mean(dig_df.confidence),
+        Dict(),
+        dig_df,
+    )
+end
+
+"""
+    digit_values_2points!(display,image, threshold; factor = 2.0, force=false)
+    Call digits based on 2-point method
+    Input: Display, image
+    threshold: difference between foreground and background to call a segment "on"
+    factor: number of segments_width to use to find backgound pixel
+    force: if true: recall digits
+"""
+function display_call_2points!(display,image, threshold; factor = 2.0, force=false)
+    for area in display.digit_areas        
+        for digit in area.digits
+            call_digit_2points!(digit, area.segment_width, image, threshold; factor = factor, force=force)
+        end
+    end
+end
+
